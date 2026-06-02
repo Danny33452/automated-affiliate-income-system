@@ -1,0 +1,68 @@
+name: Build and deploy site
+
+# Runs the test suite, generates the static site, and publishes it to GitHub
+# Pages. Triggers: daily schedule, pushes to main, and manual dispatch.
+on:
+  schedule:
+    - cron: "0 6 * * *"   # every day at 06:00 UTC
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permissions required by the official GitHub Pages deploy actions.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment; don't cancel an in-progress run.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Run tests
+        run: python -m pytest -q
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Generate static site
+        env:
+          # Optional: set these as repo Secrets/Variables to go "live".
+          # Absent -> the pipeline falls back to offline templates/local trends.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AFFILIATE_MODEL: ${{ vars.AFFILIATE_MODEL }}
+          AFFILIATE_TRENDS: ${{ vars.AFFILIATE_TRENDS }}
+        run: python run.py --count 10
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
