@@ -49,6 +49,25 @@ pip install pytest
 python3 -m pytest
 ```
 
+## Configuration via environment variables
+
+All of these are optional — with none set, the pipeline runs fully offline at
+zero per-run cost using deterministic templates.
+
+| Variable | Effect |
+|----------|--------|
+| `ANTHROPIC_API_KEY` | Enables real AI article drafting via the Claude API. Without it, articles use the offline template. |
+| `AFFILIATE_MODEL` | Claude model id for drafting (default `claude-sonnet-4-6`). |
+| `AFFILIATE_TRENDS` | `remote` pulls real related search queries from Google Autocomplete (free, no key); `local` (default) uses the offline template expansion. Remote always falls back to local on any network error. |
+
+Example — fully "live" run:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export AFFILIATE_TRENDS=remote
+python3 run.py --count 10
+```
+
 ## How to Add Affiliate Links
 
 Affiliate links live in `config.json` (never commit real links/IDs to a public
