@@ -1,5 +1,12 @@
-"""Template-based SEO article generator (no paid API)."""
+"""SEO article generator.
+
+Uses the Claude API when a key is configured (see :mod:`src.ai_writer`) and
+falls back to a deterministic, no-cost template otherwise. The public return
+schema is stable: ``{"title", "slug", "markdown", "word_count"}``.
+"""
 import re
+
+from src.ai_writer import draft_markdown
 
 
 def slugify(text):
@@ -8,11 +15,8 @@ def slugify(text):
     return re.sub(r"-+", "-", text).strip("-")
 
 
-def generate_article(topic_dict):
-    topic = str(topic_dict.get("topic", "Untitled")).strip() or "Untitled"
-    keyword = str(topic_dict.get("keyword", topic)).strip() or topic
-    title = topic
-
+def _template_markdown(topic, keyword):
+    """Build a 300+ word article from a fixed template (offline, no API)."""
     sections = [
         ("Introduction",
          f"Welcome to this comprehensive guide on {topic}. In this article we "
@@ -51,16 +55,30 @@ def generate_article(topic_dict):
          f"possible outcome."),
     ]
 
-    md_parts = [f"# {title}\n"]
+    md_parts = [f"# {topic}\n"]
     for heading, body in sections:
         md_parts.append(f"## {heading}\n\n{body}\n")
-    markdown = "\n".join(md_parts)
+    return "\n".join(md_parts)
+
+
+def generate_article(topic_dict, client=None):
+    """Generate an article dict for a topic.
+
+    Tries the Claude API first (when configured) and falls back to the offline
+    template. The ``client`` argument is forwarded to the AI writer for testing.
+    """
+    topic = str(topic_dict.get("topic", "Untitled")).strip() or "Untitled"
+    keyword = str(topic_dict.get("keyword", topic)).strip() or topic
+
+    markdown = draft_markdown(topic, keyword, client=client)
+    if not markdown:
+        markdown = _template_markdown(topic, keyword)
 
     word_count = len(re.findall(r"\b\w+\b", markdown))
 
     return {
-        "title": title,
-        "slug": slugify(title),
+        "title": topic,
+        "slug": slugify(topic),
         "markdown": markdown,
         "word_count": word_count,
     }
