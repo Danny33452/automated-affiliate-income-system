@@ -1,3 +1,4 @@
-# Run the affiliate automation every day at 06:00
-# Edit with: crontab -e
-0 6 * * * cd /workspace && /usr/bin/python3 run.py >> /workspace/run.log 2>&1
+# Run the affiliate automation every day at 06:00.
+# Edit your crontab with: crontab -e
+# Replace /path/to/automated-affiliate-income-system with this repo's location.
+0 6 * * * cd /path/to/automated-affiliate-income-system && /usr/bin/python3 run.py >> run.log 2>&1

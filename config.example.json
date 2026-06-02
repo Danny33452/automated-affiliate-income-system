@@ -1,4 +1,7 @@
 {
+  "site_title": "My Affiliate Site",
+  "author": "Editorial Team",
+  "keywords": ["running shoes", "coffee maker"],
   "affiliates": {
     "running shoes": "https://aff.example/x?id=YOUR_AFFILIATE_ID",
     "coffee maker": "https://aff.example/y?id=YOUR_AFFILIATE_ID"

@@ -30,35 +30,48 @@ Run the main script manually to verify everything works:
 python3 run.py
 ```
 
-This will fetch/refresh data, inject your affiliate IDs into the generated
-links, and write the output (static HTML/assets) into the `public/` directory.
+This runs the full pipeline — pick trending topics from your seed keywords
+(`src/trends.py`), draft SEO articles (`src/content.py`), inject your affiliate
+links plus an FTC disclosure (`src/monetize.py`), and render a static site into
+the `public/` directory with an `index.html` linking every article.
 
-## How to Add Affiliate IDs
+With no arguments it loads `config.json` if present, otherwise the committed
+`config.example.json`. You can also pass options explicitly:
 
-Affiliate IDs are stored in `config.json` (never commit real IDs to a public
-repo). Add or update them under the `affiliates` section:
+```bash
+python3 run.py --config config.json --count 10 --out public
+```
+
+### Running the tests
+
+```bash
+pip install pytest
+python3 -m pytest
+```
+
+## How to Add Affiliate Links
+
+Affiliate links live in `config.json` (never commit real links/IDs to a public
+repo). The `affiliates` section maps a **keyword** to the **full affiliate URL**
+you want that keyword to link to. When a keyword appears in a generated article,
+the first occurrence is turned into a link (once per keyword), and an FTC
+disclosure line is appended automatically:
 
 ```json
 {
+  "site_title": "My Affiliate Site",
+  "author": "Editorial Team",
+  "keywords": ["running shoes", "coffee maker"],
   "affiliates": {
-    "amazon": "yourtag-20",
-    "shareasale": "1234567",
-    "impact": "your-impact-id"
+    "running shoes": "https://www.amazon.com/dp/XXXX?tag=yourtag-20",
+    "coffee maker": "https://www.example.com/track?id=1234567"
   }
 }
 ```
 
-Each network expects its own ID format. The script reads these values at run
-time and appends them as query parameters / tags to every outbound link, so you
-only need to set them once. To add a new network, add a new key/value pair and
-reference it in your link templates.
-
-You can also override IDs via environment variables for CI/CD secrets:
-
-```bash
-export AMAZON_AFFILIATE_ID="yourtag-20"
-python3 run.py
-```
+Put your network's tag/ID directly in the URL (for example Amazon's
+`?tag=yourtag-20`). The `keywords` list seeds topic selection; if you omit it,
+the keys of `affiliates` are used instead.
 
 ## How to Schedule It (Hands-Off Operation)
 
@@ -68,7 +81,7 @@ Edit your crontab with `crontab -e` and add the line from
 [`schedule.cron`](schedule.cron). For example, to run every day at 6:00 AM:
 
 ```cron
-0 6 * * * cd /workspace && /usr/bin/python3 run.py >> /workspace/run.log 2>&1
+0 6 * * * cd /path/to/automated-affiliate-income-system && /usr/bin/python3 run.py >> run.log 2>&1
 ```
 
 ### Option B: systemd timer
@@ -81,8 +94,8 @@ Description=Run affiliate automation
 
 [Service]
 Type=oneshot
-WorkingDirectory=/workspace
-ExecStart=/usr/bin/python3 /workspace/run.py
+WorkingDirectory=/path/to/automated-affiliate-income-system
+ExecStart=/usr/bin/python3 /path/to/automated-affiliate-income-system/run.py
 ```
 
 Create `/etc/systemd/system/affiliate.timer`:
