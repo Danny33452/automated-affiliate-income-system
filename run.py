@@ -21,6 +21,7 @@ import shutil
 from datetime import datetime, timezone
 
 from src.content import generate_article
+from src.linking import related_links
 from src.monetize import inject_affiliate
 from src.roundup import generate_roundup
 from src.trends import fetch_topics
@@ -104,8 +105,21 @@ def _verification_meta(token):
     return f'\n<meta name="google-site-verification" content="{html.escape(token)}">'
 
 
+def _related_section(related):
+    if not related:
+        return ""
+    items = "\n".join(
+        f'<li><a href="{slug}.html">{html.escape(title)}</a></li>'
+        for title, slug in related
+    )
+    return (
+        '\n<section class="related"><h2>Related articles</h2>\n'
+        f"<ul>\n{items}\n</ul>\n</section>"
+    )
+
+
 def render_page(title, body_html, *, description, canonical, footer,
-                author, date, verification):
+                author, date, verification, related=None):
     ld = {
         "@context": "https://schema.org",
         "@type": "Article",
@@ -141,7 +155,7 @@ def render_page(title, body_html, *, description, canonical, footer,
 <nav><a href="index.html">&larr; Home</a></nav>
 <article>
 {body_html}
-</article>
+</article>{_related_section(related)}
 <footer><hr><p>{footer}</p></footer>
 </body>
 </html>
@@ -229,14 +243,16 @@ def build_site(config, count, out_dir):
     footer = f"© {datetime.now(timezone.utc).year} {author}".strip()
 
     # Money pages first: roundups are self-contained (links + disclosure).
-    items = [(generate_roundup(spec), None) for spec in config.get("roundups", [])]
+    items = [(generate_roundup(spec), None, spec.get("keyword", ""))
+             for spec in config.get("roundups", [])]
     # Then supporting articles generated from trending keywords.
     for topic in fetch_topics(seed_keywords(config), limit=count):
-        items.append((generate_article(topic), affiliates))
+        items.append((generate_article(topic), affiliates, topic.get("keyword", "")))
 
+    # Pass 1: finalize content, unique slugs and per-page metadata.
     seen_slugs = set()
-    articles = []
-    for article, link_map in items:
+    records = []
+    for article, link_map, keyword in items:
         md_text = article["markdown"]
         if link_map is not None:
             md_text = inject_affiliate(md_text, link_map)
@@ -249,22 +265,32 @@ def build_site(config, count, out_dir):
             n += 1
         seen_slugs.add(unique)
 
-        canonical = f"{base_url}/{unique}.html" if base_url else ""
-        description = meta_description(md_text, site_desc)
+        records.append({
+            "title": article["title"],
+            "slug": unique,
+            "keyword": keyword,
+            "body_html": md_to_html(md_text),
+            "description": meta_description(md_text, site_desc),
+        })
+
+    # Pass 2: render pages with related-article internal links.
+    for i, rec in enumerate(records):
+        canonical = f"{base_url}/{rec['slug']}.html" if base_url else ""
         page = render_page(
-            article["title"],
-            md_to_html(md_text),
-            description=description,
+            rec["title"],
+            rec["body_html"],
+            description=rec["description"],
             canonical=canonical,
             footer=footer,
             author=author,
             date=date,
             verification=verification,
+            related=related_links(records, i),
         )
-        with open(os.path.join(out_dir, f"{unique}.html"), "w") as f:
+        with open(os.path.join(out_dir, f"{rec['slug']}.html"), "w") as f:
             f.write(page)
-        articles.append((article["title"], unique))
 
+    articles = [(rec["title"], rec["slug"]) for rec in records]
     links = "\n".join(
         f'<li><a href="{slug}.html">{html.escape(title)}</a></li>'
         for title, slug in articles

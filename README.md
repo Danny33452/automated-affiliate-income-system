@@ -88,6 +88,9 @@ Every build writes, alongside the article pages and `index.html`:
 - **`sitemap.xml`** and **`robots.txt`** (submit the sitemap to Google Search Console).
 - Per-page **meta description**, **canonical** link, and **Open Graph** tags.
 - **`Article` JSON-LD** structured data for rich results.
+- **Automatic internal links** — each page gets a "Related articles" section
+  linking the most topically-related pages (shared keyword + title overlap),
+  which spreads SEO link equity and keeps readers on the site.
 
 Set `base_url` so these contain absolute URLs, and paste your Search Console
 token into `google_site_verification` to verify ownership.
