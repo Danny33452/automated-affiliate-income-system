@@ -1,9 +1,27 @@
 {
-  "site_title": "My Affiliate Site",
-  "author": "Editorial Team",
-  "keywords": ["running shoes", "coffee maker"],
+  "site_title": "Home Barista Gear",
+  "author": "Home Barista Gear",
+  "base_url": "https://danny33452.github.io/automated-affiliate-income-system",
+  "description": "Hands-on espresso gear reviews and buying guides for home baristas — machines, grinders, scales, and accessories.",
+  "google_site_verification": "",
+  "keywords": [
+    "espresso machine",
+    "espresso grinder",
+    "dual boiler espresso machine",
+    "espresso tamper",
+    "milk frothing pitcher",
+    "espresso scale",
+    "bottomless portafilter",
+    "espresso beans"
+  ],
   "affiliates": {
-    "running shoes": "https://aff.example/x?id=YOUR_AFFILIATE_ID",
-    "coffee maker": "https://aff.example/y?id=YOUR_AFFILIATE_ID"
+    "espresso machine": "https://www.amazon.com/s?k=espresso+machine&tag=danny33452-20",
+    "espresso grinder": "https://www.amazon.com/s?k=espresso+grinder&tag=danny33452-20",
+    "dual boiler espresso machine": "https://www.amazon.com/s?k=dual+boiler+espresso+machine&tag=danny33452-20",
+    "espresso tamper": "https://www.amazon.com/s?k=espresso+tamper&tag=danny33452-20",
+    "milk frothing pitcher": "https://www.amazon.com/s?k=milk+frothing+pitcher&tag=danny33452-20",
+    "espresso scale": "https://www.amazon.com/s?k=espresso+scale&tag=danny33452-20",
+    "bottomless portafilter": "https://www.amazon.com/s?k=bottomless+portafilter&tag=danny33452-20",
+    "espresso beans": "https://www.amazon.com/s?k=espresso+beans&tag=danny33452-20"
   }
 }

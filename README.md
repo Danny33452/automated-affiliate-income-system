@@ -68,6 +68,30 @@ export AFFILIATE_TRENDS=remote
 python3 run.py --count 10
 ```
 
+## Site config fields
+
+The JSON config (`config.json`, falling back to `config.example.json`) supports:
+
+| Field | Purpose |
+|-------|---------|
+| `site_title` / `author` | Branding shown on pages and in structured data. |
+| `description` | Site meta description and fallback for article descriptions. |
+| `base_url` | Public site URL. Required for absolute canonical/Open Graph URLs and the sitemap (e.g. `https://USER.github.io/REPO`). |
+| `google_site_verification` | Optional token; rendered as the Search Console verification `<meta>` tag. |
+| `keywords` | Seed keywords for topic selection (defaults to the affiliate keys). |
+| `affiliates` | Keyword → affiliate URL map (see below). |
+
+## SEO output
+
+Every build writes, alongside the article pages and `index.html`:
+
+- **`sitemap.xml`** and **`robots.txt`** (submit the sitemap to Google Search Console).
+- Per-page **meta description**, **canonical** link, and **Open Graph** tags.
+- **`Article` JSON-LD** structured data for rich results.
+
+Set `base_url` so these contain absolute URLs, and paste your Search Console
+token into `google_site_verification` to verify ownership.
+
 ## How to Add Affiliate Links
 
 Affiliate links live in `config.json` (never commit real links/IDs to a public
