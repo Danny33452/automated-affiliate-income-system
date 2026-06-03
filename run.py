@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 
 from src.content import generate_article
 from src.monetize import inject_affiliate
+from src.roundup import generate_roundup
 from src.trends import fetch_topics
 
 # ---------------------------------------------------------------------------
@@ -38,7 +39,12 @@ except Exception:  # pragma: no cover - fallback path
         in_list = False
         for line in text.splitlines():
             line = line.rstrip()
-            if line.startswith("### "):
+            if line.startswith("<"):  # raw HTML block (e.g. comparison table)
+                if in_list:
+                    html_lines.append("</ul>")
+                    in_list = False
+                html_lines.append(line)
+            elif line.startswith("### "):
                 html_lines.append(f"<h3>{line[4:]}</h3>")
             elif line.startswith("## "):
                 html_lines.append(f"<h2>{line[3:]}</h2>")
@@ -222,12 +228,18 @@ def build_site(config, count, out_dir):
     date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     footer = f"© {datetime.now(timezone.utc).year} {author}".strip()
 
-    topics = fetch_topics(seed_keywords(config), limit=count)
+    # Money pages first: roundups are self-contained (links + disclosure).
+    items = [(generate_roundup(spec), None) for spec in config.get("roundups", [])]
+    # Then supporting articles generated from trending keywords.
+    for topic in fetch_topics(seed_keywords(config), limit=count):
+        items.append((generate_article(topic), affiliates))
+
     seen_slugs = set()
     articles = []
-    for topic in topics:
-        article = generate_article(topic)
-        md_text = inject_affiliate(article["markdown"], affiliates)
+    for article, link_map in items:
+        md_text = article["markdown"]
+        if link_map is not None:
+            md_text = inject_affiliate(md_text, link_map)
 
         slug = article["slug"] or "article"
         unique = slug

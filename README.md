@@ -92,6 +92,39 @@ Every build writes, alongside the article pages and `index.html`:
 Set `base_url` so these contain absolute URLs, and paste your Search Console
 token into `google_site_verification` to verify ownership.
 
+## Comparison roundups (money pages)
+
+The highest-converting affiliate format is a "best X" roundup: an at-a-glance
+comparison table plus a section per product with pros/cons and a call to action.
+Define these under a `roundups` array in your config — each is rendered as its
+own page (in addition to the keyword articles) with an HTML comparison table and
+`rel="nofollow sponsored"` affiliate links:
+
+```json
+"roundups": [
+  {
+    "title": "Best Espresso Machines for Home Baristas",
+    "keyword": "espresso machine",
+    "products": [
+      {
+        "name": "Breville Bambino Plus",
+        "url": "https://www.amazon.com/s?k=Breville+Bambino+Plus&tag=danny33452-20",
+        "best_for": "Best for small kitchens",
+        "price": "$$",
+        "summary": "Compact single-boiler machine with fast heat-up.",
+        "pros": ["Heats up in ~3s", "Automatic milk frothing"],
+        "cons": ["Small water tank", "No built-in grinder"],
+        "rating": 4.6
+      }
+    ]
+  }
+]
+```
+
+`rating` is optional. The product copy is editorial — **review it for accuracy
+and current pricing before publishing.** Swapping the search URLs for specific
+product/ASIN links typically converts better.
+
 ## How to Add Affiliate Links
 
 Affiliate links live in `config.json` (never commit real links/IDs to a public
