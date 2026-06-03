@@ -14,6 +14,50 @@
     "bottomless portafilter",
     "espresso beans"
   ],
+  "roundups": [
+    {
+      "title": "Best Espresso Machines for Home Baristas",
+      "keyword": "espresso machine",
+      "products": [
+        {
+          "name": "Breville Bambino Plus",
+          "url": "https://www.amazon.com/s?k=Breville+Bambino+Plus&tag=danny33452-20",
+          "best_for": "Best for small kitchens",
+          "price": "$$",
+          "summary": "A compact single-boiler machine with a fast thermojet heater and automatic milk frothing.",
+          "pros": ["Heats up in about 3 seconds", "Automatic milk frothing", "Small footprint"],
+          "cons": ["Small water tank", "No built-in grinder"]
+        },
+        {
+          "name": "Gaggia Classic Pro",
+          "url": "https://www.amazon.com/s?k=Gaggia+Classic+Pro&tag=danny33452-20",
+          "best_for": "Best for tinkerers and upgrades",
+          "price": "$$",
+          "summary": "A rugged, repairable workhorse with a commercial-style 58mm portafilter and a huge mod community.",
+          "pros": ["Commercial 58mm portafilter", "Durable, repairable design", "Large upgrade/mod community"],
+          "cons": ["No PID temperature control out of the box", "Manual milk steaming has a learning curve"]
+        },
+        {
+          "name": "Breville Barista Express",
+          "url": "https://www.amazon.com/s?k=Breville+Barista+Express&tag=danny33452-20",
+          "best_for": "Best all-in-one with grinder",
+          "price": "$$$",
+          "summary": "A complete setup with an integrated conical burr grinder for grind-to-portafilter convenience.",
+          "pros": ["Built-in conical burr grinder", "Grind straight into the portafilter", "Good value as a full setup"],
+          "cons": ["Single boiler (no simultaneous brew and steam)", "Some plastic components"]
+        },
+        {
+          "name": "Rancilio Silvia",
+          "url": "https://www.amazon.com/s?k=Rancilio+Silvia&tag=danny33452-20",
+          "best_for": "Best build quality under $1000",
+          "price": "$$$",
+          "summary": "A commercial-grade single boiler with a brass group head and a powerful steam wand.",
+          "pros": ["Durable commercial-grade build", "Powerful steam wand", "Brass boiler and group head"],
+          "cons": ["No PID out of the box (temperature surfing)", "Single boiler"]
+        }
+      ]
+    }
+  ],
   "affiliates": {
     "espresso machine": "https://www.amazon.com/s?k=espresso+machine&tag=danny33452-20",
     "espresso grinder": "https://www.amazon.com/s?k=espresso+grinder&tag=danny33452-20",
