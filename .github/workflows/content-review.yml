@@ -34,6 +34,9 @@ jobs:
           AFFILIATE_MODEL: ${{ vars.AFFILIATE_MODEL }}
           AFFILIATE_TRENDS: ${{ vars.AFFILIATE_TRENDS }}
         run: python run.py --write-content --count "${{ github.event.inputs.count || '6' }}"
+      - name: Validate generated content
+        # Fail the job (so no PR is opened) if any article is malformed.
+        run: python -m src.validate content
       - name: Open review pull request
         uses: peter-evans/create-pull-request@v6
         with:
