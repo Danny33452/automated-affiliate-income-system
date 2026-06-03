@@ -152,6 +152,24 @@ Put your network's tag/ID directly in the URL (for example Amazon's
 `?tag=yourtag-20`). The `keywords` list seeds topic selection; if you omit it,
 the keys of `affiliates` are used instead.
 
+## Content review gate
+
+Generation and publishing are separate stages so AI content can be reviewed
+before it goes live (Google penalizes unreviewed bulk AI content):
+
+1. **Generate** — `python run.py --write-content` writes articles as Markdown
+   into `content/` (with frontmatter). No HTML is rendered.
+2. **Review** — edit the Markdown in `content/`. The
+   `Generate content for review` workflow runs this on a schedule and opens a
+   pull request with the changes; nothing publishes until you merge it.
+3. **Publish** — `python run.py --from-content` renders the site from the
+   committed Markdown in `content/` (no AI/generation), so what you approved is
+   exactly what ships. The deploy workflow runs this on merge to `main`.
+
+`content/` is tracked in git (it is the reviewed source of truth);
+`public/` (rendered HTML) is not. `python run.py` with no flags still does the
+old one-shot generate-and-render for local previews.
+
 ## How to Schedule It (Hands-Off Operation)
 
 ### Option A: cron

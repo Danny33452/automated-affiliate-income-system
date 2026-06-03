@@ -20,6 +20,7 @@ import re
 import shutil
 from datetime import datetime, timezone
 
+from src import store
 from src.content import generate_article
 from src.linking import related_links
 from src.monetize import inject_affiliate
@@ -228,30 +229,21 @@ def seed_keywords(config):
     return ["technology", "health", "home office", "fitness", "cooking"]
 
 
-def build_site(config, count, out_dir):
-    if os.path.isdir(out_dir):
-        shutil.rmtree(out_dir)
-    os.makedirs(out_dir, exist_ok=True)
+def generate_articles(config, count):
+    """Content stage: produce finalized article dicts (no HTML rendering).
 
-    site_title = config.get("site_title", "My Affiliate Site")
-    author = config.get("author") or site_title
-    site_desc = config.get("description", site_title)
-    base_url = config.get("base_url", "").rstrip("/")
-    verification = config.get("google_site_verification", "")
+    Returns a list of ``{"title", "slug", "keyword", "markdown"}`` with
+    affiliate links injected and unique slugs resolved. Roundup money pages
+    come first, then supporting keyword articles.
+    """
     affiliates = config.get("affiliates", {})
-    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    footer = f"© {datetime.now(timezone.utc).year} {author}".strip()
-
-    # Money pages first: roundups are self-contained (links + disclosure).
     items = [(generate_roundup(spec), None, spec.get("keyword", ""))
              for spec in config.get("roundups", [])]
-    # Then supporting articles generated from trending keywords.
     for topic in fetch_topics(seed_keywords(config), limit=count):
         items.append((generate_article(topic), affiliates, topic.get("keyword", "")))
 
-    # Pass 1: finalize content, unique slugs and per-page metadata.
     seen_slugs = set()
-    records = []
+    articles = []
     for article, link_map, keyword in items:
         md_text = article["markdown"]
         if link_map is not None:
@@ -265,15 +257,41 @@ def build_site(config, count, out_dir):
             n += 1
         seen_slugs.add(unique)
 
-        records.append({
+        articles.append({
             "title": article["title"],
             "slug": unique,
             "keyword": keyword,
-            "body_html": md_to_html(md_text),
-            "description": meta_description(md_text, site_desc),
+            "markdown": md_text,
         })
+    return articles
 
-    # Pass 2: render pages with related-article internal links.
+
+def render_site(articles, config, out_dir):
+    """Publish stage: render finalized articles into a static site.
+
+    Does no content generation or AI calls, so the output reflects exactly the
+    ``articles`` passed in (e.g. human-reviewed markdown from ``content/``).
+    """
+    if os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
+
+    site_title = config.get("site_title", "My Affiliate Site")
+    author = config.get("author") or site_title
+    site_desc = config.get("description", site_title)
+    base_url = config.get("base_url", "").rstrip("/")
+    verification = config.get("google_site_verification", "")
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    footer = f"© {datetime.now(timezone.utc).year} {author}".strip()
+
+    records = [{
+        "title": a["title"],
+        "slug": a["slug"],
+        "keyword": a.get("keyword", ""),
+        "body_html": md_to_html(a["markdown"]),
+        "description": meta_description(a["markdown"], site_desc),
+    } for a in articles]
+
     for i, rec in enumerate(records):
         canonical = f"{base_url}/{rec['slug']}.html" if base_url else ""
         page = render_page(
@@ -290,20 +308,24 @@ def build_site(config, count, out_dir):
         with open(os.path.join(out_dir, f"{rec['slug']}.html"), "w") as f:
             f.write(page)
 
-    articles = [(rec["title"], rec["slug"]) for rec in records]
+    index_items = [(rec["title"], rec["slug"]) for rec in records]
     links = "\n".join(
         f'<li><a href="{slug}.html">{html.escape(title)}</a></li>'
-        for title, slug in articles
+        for title, slug in index_items
     )
     with open(os.path.join(out_dir, "index.html"), "w") as f:
         f.write(render_index(site_title, site_desc, links, footer,
                              verification=verification))
-
     with open(os.path.join(out_dir, "sitemap.xml"), "w") as f:
-        f.write(render_sitemap(base_url, [s for _, s in articles], date))
+        f.write(render_sitemap(base_url, [s for _, s in index_items], date))
     with open(os.path.join(out_dir, "robots.txt"), "w") as f:
         f.write(render_robots(base_url))
-    return len(articles)
+    return len(records)
+
+
+def build_site(config, count, out_dir):
+    """Generate content and render it in one shot (local / non-gated path)."""
+    return render_site(generate_articles(config, count), config, out_dir)
 
 
 def default_config_path(base_dir):
@@ -332,10 +354,42 @@ def main():
         default=os.path.join(base_dir, "public"),
         help="Output directory for the static site (default: ./public)",
     )
+    ap.add_argument(
+        "--content-dir",
+        default=os.path.join(base_dir, "content"),
+        help="Directory of reviewable Markdown articles (default: ./content)",
+    )
+    ap.add_argument(
+        "--write-content",
+        action="store_true",
+        help="Content stage: generate Markdown into the content dir for review "
+             "(no HTML). Used by the review-gate workflow.",
+    )
+    ap.add_argument(
+        "--from-content",
+        action="store_true",
+        help="Publish stage: build the site from committed Markdown in the "
+             "content dir (no generation/AI).",
+    )
     args = ap.parse_args()
 
     config = load_config(args.config)
-    n = build_site(config, args.count, args.out)
+
+    if args.write_content:
+        articles = generate_articles(config, args.count)
+        store.write_articles(articles, args.content_dir)
+        print(f"Wrote {len(articles)} articles to {args.content_dir}")
+        return
+
+    if args.from_content:
+        articles = store.read_articles(args.content_dir)
+        if not articles:
+            print("No committed content found; generating fresh.")
+            articles = generate_articles(config, args.count)
+        n = render_site(articles, config, args.out)
+    else:
+        n = build_site(config, args.count, args.out)
+
     print(f"Generated {n} articles into {args.out}")
     print(f"Open: {os.path.join(args.out, 'index.html')}")
 

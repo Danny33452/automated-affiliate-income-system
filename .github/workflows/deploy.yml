@@ -1,10 +1,11 @@
 name: Build and deploy site
 
-# Runs the test suite, generates the static site, and publishes it to GitHub
-# Pages. Triggers: daily schedule, pushes to main, and manual dispatch.
+# Runs the test suite, builds the static site from the reviewed content in
+# content/, and publishes it to GitHub Pages. Content is generated separately by
+# the "Generate content for review" workflow, so deploy only publishes what has
+# been reviewed and merged to main. Triggers: pushes to main, PRs (tests only),
+# and manual dispatch.
 on:
-  schedule:
-    - cron: "0 6 * * *"   # every day at 06:00 UTC
   push:
     branches: [main]
   pull_request:
@@ -47,14 +48,10 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Generate static site
-        env:
-          # Optional: set these as repo Secrets/Variables to go "live".
-          # Absent -> the pipeline falls back to offline templates/local trends.
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          AFFILIATE_MODEL: ${{ vars.AFFILIATE_MODEL }}
-          AFFILIATE_TRENDS: ${{ vars.AFFILIATE_TRENDS }}
-        run: python run.py --count 10
+      - name: Build static site from reviewed content
+        # Renders the committed Markdown in content/ (no AI/generation here).
+        # If content/ is empty, run.py falls back to generating fresh.
+        run: python run.py --from-content
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
