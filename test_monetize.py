@@ -3,7 +3,7 @@ import os
 
 from src.monetize import inject_affiliate, load_config
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 def test_link_injected():

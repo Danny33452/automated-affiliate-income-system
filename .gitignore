@@ -1,0 +1,15 @@
+# Build output
+public/
+content/
+
+# Local config with real affiliate IDs (never commit)
+config.json
+
+# Logs
+run.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/

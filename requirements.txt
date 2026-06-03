@@ -1,1 +1,6 @@
 markdown>=3.4
+
+# Optional: enables AI article drafting via the Claude API.
+# The pipeline falls back to offline templates when this is absent or no
+# ANTHROPIC_API_KEY is set, so it remains optional for zero-cost runs.
+anthropic>=0.40

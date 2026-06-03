@@ -30,35 +30,67 @@ Run the main script manually to verify everything works:
 python3 run.py
 ```
 
-This will fetch/refresh data, inject your affiliate IDs into the generated
-links, and write the output (static HTML/assets) into the `public/` directory.
+This runs the full pipeline — pick trending topics from your seed keywords
+(`src/trends.py`), draft SEO articles (`src/content.py`), inject your affiliate
+links plus an FTC disclosure (`src/monetize.py`), and render a static site into
+the `public/` directory with an `index.html` linking every article.
 
-## How to Add Affiliate IDs
+With no arguments it loads `config.json` if present, otherwise the committed
+`config.example.json`. You can also pass options explicitly:
 
-Affiliate IDs are stored in `config.json` (never commit real IDs to a public
-repo). Add or update them under the `affiliates` section:
+```bash
+python3 run.py --config config.json --count 10 --out public
+```
+
+### Running the tests
+
+```bash
+pip install pytest
+python3 -m pytest
+```
+
+## Configuration via environment variables
+
+All of these are optional — with none set, the pipeline runs fully offline at
+zero per-run cost using deterministic templates.
+
+| Variable | Effect |
+|----------|--------|
+| `ANTHROPIC_API_KEY` | Enables real AI article drafting via the Claude API. Without it, articles use the offline template. |
+| `AFFILIATE_MODEL` | Claude model id for drafting (default `claude-sonnet-4-6`). |
+| `AFFILIATE_TRENDS` | `remote` pulls real related search queries from Google Autocomplete (free, no key); `local` (default) uses the offline template expansion. Remote always falls back to local on any network error. |
+
+Example — fully "live" run:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export AFFILIATE_TRENDS=remote
+python3 run.py --count 10
+```
+
+## How to Add Affiliate Links
+
+Affiliate links live in `config.json` (never commit real links/IDs to a public
+repo). The `affiliates` section maps a **keyword** to the **full affiliate URL**
+you want that keyword to link to. When a keyword appears in a generated article,
+the first occurrence is turned into a link (once per keyword), and an FTC
+disclosure line is appended automatically:
 
 ```json
 {
+  "site_title": "My Affiliate Site",
+  "author": "Editorial Team",
+  "keywords": ["running shoes", "coffee maker"],
   "affiliates": {
-    "amazon": "yourtag-20",
-    "shareasale": "1234567",
-    "impact": "your-impact-id"
+    "running shoes": "https://www.amazon.com/dp/XXXX?tag=yourtag-20",
+    "coffee maker": "https://www.example.com/track?id=1234567"
   }
 }
 ```
 
-Each network expects its own ID format. The script reads these values at run
-time and appends them as query parameters / tags to every outbound link, so you
-only need to set them once. To add a new network, add a new key/value pair and
-reference it in your link templates.
-
-You can also override IDs via environment variables for CI/CD secrets:
-
-```bash
-export AMAZON_AFFILIATE_ID="yourtag-20"
-python3 run.py
-```
+Put your network's tag/ID directly in the URL (for example Amazon's
+`?tag=yourtag-20`). The `keywords` list seeds topic selection; if you omit it,
+the keys of `affiliates` are used instead.
 
 ## How to Schedule It (Hands-Off Operation)
 
@@ -68,7 +100,7 @@ Edit your crontab with `crontab -e` and add the line from
 [`schedule.cron`](schedule.cron). For example, to run every day at 6:00 AM:
 
 ```cron
-0 6 * * * cd /workspace && /usr/bin/python3 run.py >> /workspace/run.log 2>&1
+0 6 * * * cd /path/to/automated-affiliate-income-system && /usr/bin/python3 run.py >> run.log 2>&1
 ```
 
 ### Option B: systemd timer
@@ -81,8 +113,8 @@ Description=Run affiliate automation
 
 [Service]
 Type=oneshot
-WorkingDirectory=/workspace
-ExecStart=/usr/bin/python3 /workspace/run.py
+WorkingDirectory=/path/to/automated-affiliate-income-system
+ExecStart=/usr/bin/python3 /path/to/automated-affiliate-income-system/run.py
 ```
 
 Create `/etc/systemd/system/affiliate.timer`:
@@ -110,15 +142,29 @@ sudo systemctl enable --now affiliate.timer
 
 Because the output is a static site in `public/`, you can host it for free.
 
-### GitHub Pages
+### GitHub Pages (included workflow)
 
-1. Push the repository to GitHub.
-2. Use a GitHub Actions workflow (scheduled with `on: schedule: cron`) to run
-   `python3 run.py` and deploy the `public/` folder to the `gh-pages` branch.
-3. Enable GitHub Pages in repository settings, serving from `gh-pages`.
+This repo ships a ready-to-use workflow at
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) that runs the
+tests, generates the site, and deploys it to GitHub Pages. It triggers daily
+(`cron: 0 6 * * *`), on pushes to `main`, and manually via **Run workflow**.
 
-GitHub Actions can both run the automation on a schedule **and** deploy the
-static output, giving you fully hands-off, zero-cost hosting.
+One-time setup:
+
+1. Push this repository to GitHub.
+2. In **Settings → Pages**, set **Source** to **GitHub Actions**.
+3. (Optional, to go "live") In **Settings → Secrets and variables → Actions**:
+   - add secret `ANTHROPIC_API_KEY` to enable AI drafting;
+   - add repository variable `AFFILIATE_TRENDS=remote` for live keyword trends;
+   - optionally `AFFILIATE_MODEL` to pick a Claude model.
+
+Without those, the scheduled deploy still works — it just uses the offline
+templates and local trends, giving you fully hands-off, zero-cost hosting.
+
+> The build uses `config.json` if present, otherwise `config.example.json`.
+> `config.json` is git-ignored by default; affiliate tags are public on the
+> live page anyway, so for a deployed site either commit a `config.json`
+> (remove it from `.gitignore`) or edit `config.example.json` with your links.
 
 ### Netlify
 
