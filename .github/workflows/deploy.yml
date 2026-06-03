@@ -7,6 +7,8 @@ on:
     - cron: "0 6 * * *"   # every day at 06:00 UTC
   push:
     branches: [main]
+  pull_request:
+    branches: [main]      # run tests on PRs; build/deploy stay main-only
   workflow_dispatch:
 
 # Permissions required by the official GitHub Pages deploy actions.
@@ -35,6 +37,8 @@ jobs:
 
   build:
     needs: test
+    # Only build/deploy on main (push/schedule/dispatch), never on PRs.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,6 +62,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
