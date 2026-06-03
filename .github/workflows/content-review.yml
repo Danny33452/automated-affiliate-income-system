@@ -1,0 +1,55 @@
+name: Generate content for review
+
+# Review gate: on a schedule (or manual run) this regenerates the Markdown in
+# content/ and opens a pull request with the changes. Nothing is published until
+# a human reviews/edits and merges that PR, which then triggers the deploy.
+on:
+  schedule:
+    - cron: "0 5 * * *"   # daily at 05:00 UTC (before the publish window)
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Number of supporting articles to generate"
+        default: "6"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Generate content into content/
+        env:
+          # Optional: set these to produce real AI content + live trends.
+          # Absent -> deterministic offline templates/local trends.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AFFILIATE_MODEL: ${{ vars.AFFILIATE_MODEL }}
+          AFFILIATE_TRENDS: ${{ vars.AFFILIATE_TRENDS }}
+        run: python run.py --write-content --count "${{ github.event.inputs.count || '6' }}"
+      - name: Open review pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          add-paths: content/**
+          branch: content/auto-review
+          delete-branch: true
+          commit-message: "chore: regenerate content for review"
+          title: "Content review: regenerated articles"
+          labels: content-review
+          body: |
+            Automated content generation for **review before publishing**.
+
+            - Review and edit the Markdown under `content/`.
+            - For AI articles, verify accuracy, add first-hand detail, and check
+              affiliate product claims/pricing.
+            - Merge to publish: merging to `main` triggers the deploy, which
+              builds the site **from this reviewed content**.
+
+            If there are no changes, no PR is created.

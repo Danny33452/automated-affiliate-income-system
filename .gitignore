@@ -1,6 +1,7 @@
-# Build output
+# Build output (rendered HTML site)
 public/
-content/
+
+# Note: content/ holds reviewable Markdown and IS tracked (review-gate flow).
 
 # Local config with real affiliate IDs (never commit)
 config.json
