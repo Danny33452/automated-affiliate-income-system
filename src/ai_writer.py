@@ -12,9 +12,18 @@ a batch of articles in one run only the first call pays full price for it.
 import os
 import sys
 
-# Default to a capable, cost-effective model; override with AFFILIATE_MODEL.
-MODEL = os.environ.get("AFFILIATE_MODEL", "claude-sonnet-4-6")
+_DEFAULT_MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 1600
+
+
+def model_name():
+    """Resolve the model id, treating an empty/blank AFFILIATE_MODEL as unset.
+
+    A workflow that passes ``AFFILIATE_MODEL: ${{ vars.AFFILIATE_MODEL }}`` sets
+    the env var to "" when the variable is undefined, so ``os.environ.get`` with
+    a default is not enough -- empty must fall back to the default too.
+    """
+    return (os.environ.get("AFFILIATE_MODEL") or "").strip() or _DEFAULT_MODEL
 
 SYSTEM_PROMPT = (
     "You are an expert SEO content writer for an affiliate review website. "
@@ -60,9 +69,10 @@ def draft_markdown(topic, keyword, client=None):
         "Include an introduction, 2-4 H2 sections with practical guidance, and "
         "a short conclusion. Output only Markdown, with no preamble."
     )
+    model = model_name()
     try:
         resp = client.messages.create(
-            model=MODEL,
+            model=model,
             max_tokens=_MAX_TOKENS,
             system=[
                 {
@@ -78,7 +88,7 @@ def draft_markdown(topic, keyword, client=None):
         # problems (bad key, no credits, wrong model) are diagnosable in logs.
         print(
             f"[ai_writer] Claude drafting failed for {topic!r} "
-            f"(model={MODEL}); falling back to template: {type(exc).__name__}: {exc}",
+            f"(model={model}); falling back to template: {type(exc).__name__}: {exc}",
             file=sys.stderr,
         )
         return None
