@@ -160,8 +160,10 @@ before it goes live (Google penalizes unreviewed bulk AI content):
 1. **Generate** — `python run.py --write-content` writes articles as Markdown
    into `content/` (with frontmatter). No HTML is rendered.
 2. **Review** — edit the Markdown in `content/`. The
-   `Generate content for review` workflow runs this on a schedule and opens a
-   pull request with the changes; nothing publishes until you merge it.
+   `Generate content for review` workflow runs this on a schedule, validates the
+   output (`python -m src.validate content`), and opens a pull request with the
+   changes; nothing publishes until you merge it. Validation also runs in the
+   test suite against the committed `content/`.
 3. **Publish** — `python run.py --from-content` renders the site from the
    committed Markdown in `content/` (no AI/generation), so what you approved is
    exactly what ships. The deploy workflow runs this on merge to `main`.
