@@ -10,6 +10,7 @@ Prompt caching: the (static) system prompt is sent as a cached block, so across
 a batch of articles in one run only the first call pays full price for it.
 """
 import os
+import sys
 
 # Default to a capable, cost-effective model; override with AFFILIATE_MODEL.
 MODEL = os.environ.get("AFFILIATE_MODEL", "claude-sonnet-4-6")
@@ -72,7 +73,14 @@ def draft_markdown(topic, keyword, client=None):
             ],
             messages=[{"role": "user", "content": prompt}],
         )
-    except Exception:  # network / API / rate-limit error -> fall back
+    except Exception as exc:  # network / API / rate-limit error -> fall back
+        # Surface the reason instead of silently using the template, so config
+        # problems (bad key, no credits, wrong model) are diagnosable in logs.
+        print(
+            f"[ai_writer] Claude drafting failed for {topic!r} "
+            f"(model={MODEL}); falling back to template: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
         return None
 
     text = "".join(
